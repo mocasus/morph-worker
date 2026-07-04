@@ -5,11 +5,12 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.0-10B981?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.2.0--dev-10B981?style=flat-square" alt="Version">
   <a href="https://www.npmjs.com/package/morph-worker"><img src="https://img.shields.io/npm/v/morph-worker?color=10B981&style=flat-square" alt="npm"></a>
   <img src="https://img.shields.io/badge/python-3.11+-blue?style=flat-square" alt="Python">
   <img src="https://img.shields.io/badge/node-18+-green?style=flat-square" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-10B981?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/status-alpha-red?style=flat-square" alt="Status">
 </p>
 
 <p align="center">
@@ -27,11 +28,25 @@
 
 - ✅ **Bulk Account Creation** — Create N accounts with one command
 - 📧 **Multiple Email Providers** — Mocasus temp-mail API + GSuite/Workspace
-- 🤖 **Full Automation** — Clerk signup → email verification → API key extraction
+- 🤖 **Full Automation** — Clerk signup → onboarding → API key extraction
 - 🔄 **Resume Support** — Skip already-created accounts, continue from where stopped
 - 📤 **Multi-format Export** — JSON / CSV / .env output
 - 🎨 **Human-like** — Realistic typing delays, random viewports, stealth mode
 - 🖥️ **CLI First** — Node.js CLI (`morphworker`) with live progress
+
+---
+
+## ⚠️ Current Status: Alpha
+
+Morph Worker is under active development. The core signup flow works but faces two challenges:
+
+| Issue | Status | Detail |
+|-------|--------|--------|
+| Clerk Rate Limiting | ⚠️ Mitigated | 429 on `clerk.morphllm.com` after multiple signups — auto-detected with backoff |
+| Vercel Checkpoint | ❌ Blocked | Bot detection on `www.morphllm.com` — requires residential proxy or manual cookie injection |
+| Onboarding Flow | 🔧 WIP | 6-step post-signup onboarding not yet automated (manual bypass required) |
+
+**Current workaround:** Complete onboarding manually on mobile, then feed the `__session` cookie or API key to the worker.
 
 ---
 
@@ -123,14 +138,55 @@ morphworker <command>
                    └──────────────┘
 ```
 
-### Pipeline (per account)
+### Full Pipeline (per account)
 
 ```
-1. Generate Email → provider.create_inbox()
-2. Clerk Signup   → morphllm.com → Fill form
-3. Verify Email   → Poll inbox → Submit OTP
-4. Extract Key    → Dashboard → Copy API key
-5. Save           → output/state/account_N.json
+1. Generate Email  → provider.create_inbox()
+2. Clerk Signup    → morphllm.com/sign-up → Fill form (email + password)
+3. Email Verify    → Poll inbox → Extract OTP code → Submit
+4. Sign In         → Clerk redirects to sign-in → Auto-login
+5. Onboarding*     → /onboarding → /onboarding/2 → /onboarding/3 (team?)
+                      → /onboarding/5 (use case?) → Welcome page
+6. Extract Key     → /dashboard/api-keys → Copy/create API key
+7. Save            → output/state/account_N.json
+```
+
+*\*Onboarding is a 5-6 step interactive flow with user choices. Currently requires manual completion or cookie injection.*
+
+### Clerk Flow Deep-dive
+
+```
+morphllm.com/sign-up
+    │
+    ▼
+Clerk SPA loads (clerk.morphllm.com)
+    │
+    ├─ Step 1: Fill email + password (one-step)
+    │          OR Fill email → Continue → Fill password (two-step)
+    │          → Click "Continue" button (NOT Enter — React SPA quirk)
+    │
+    ├─ Step 2: Optional — name fields (firstName/lastName)
+    │
+    ├─ Step 3: OTP verification code (from email)
+    │          → Fill 6-digit code into Clerk OTP inputs
+    │
+    ▼
+Clerk auto-redirects to sign-in
+    │
+    ├─ Fill "identifier" field (email)
+    │  → Click "Continue"
+    │  → Fill password
+    │  → Click "Continue" / "Sign In"
+    │
+    ▼
+morphllm.com/onboarding    (manual for now)
+morphllm.com/onboarding/2
+morphllm.com/onboarding/3
+morphllm.com/onboarding/5
+morphllm.com/onboarding/?u=...  (Welcome + curl)
+    │
+    ▼
+morphllm.com/dashboard/api-keys  ← API key here
 ```
 
 ---
@@ -149,7 +205,7 @@ morph-worker/
 │   ├── email_providers/
 │   │   ├── base.py           # Abstract provider interface
 │   │   ├── mocasus.py        # Mocasus temp-mail adapter
-│   │   └── gsuite.py         # GSuite adapter
+│   │   └── gsuite.py         # GSuite adapter (placeholder — needs OAuth)
 │   ├── browser/
 │   │   └── signup.py         # Playwright Clerk + Dashboard automation
 │   └── utils/
@@ -197,6 +253,16 @@ export MORPH_HEADLESS=false
 
 ---
 
+## 🐛 Known Issues
+
+1. **Vercel Checkpoint** — `www.morphllm.com` triggers Vercel bot detection on headless browsers. Workaround: inject authenticated `__session` cookie or use residential proxy.
+2. **Clerk 429** — Clerk CDN rate-limits after ~5 signup attempts per IP. Mitigation: auto-detect and abort with backoff timer.
+3. **Onboarding Not Automated** — The 5-step Morph onboarding flow after sign-in requires manual interaction. Will be automated in future release.
+4. **GSuite Provider** — Placeholder only. Needs OAuth2 service account setup with Google Workspace Admin SDK.
+5. **Enter Key** — Clerk SPA (React) does not handle Enter for form submission. Always use explicit button clicks.
+
+---
+
 ## 🛡️ Security
 
 Credentials are stored in `output/state/` — treat this directory like you would `.env` files:
@@ -215,6 +281,9 @@ MIT — [mmoaa](https://github.com/mocasus)
 
 ---
 
+<p align="center">
+  <img src="https://img.shields.io/badge/version-0.2.0--dev-10B981?style=flat-square" alt="Version">
+</p>
 <p align="center">
   <sub>Built with 🦊 by mmoaa</sub>
 </p>
