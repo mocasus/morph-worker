@@ -396,18 +396,20 @@ class ClerkSignup:
             ] + [s for s in self.PASSWORD_SELECTORS if s not in [
                 'input[name="password"]', '#password-field', 'input[type="password"]']]
             
-            # Step 1: Fill email
+            # Step 1: Fill email + click Continue
             ok = await self._fill_field(page, email, SIGNIN_EMAIL_SELECTORS, timeout=5000)
             print(f"    [signin] email filled: {ok}")
-            await self._human_delay(0.3, 0.6)
+            await self._human_delay(0.5, 0.8)
             
-            # Press Enter on email field
-            try:
-                field = page.locator(SIGNIN_EMAIL_SELECTORS[0]).first
-                await field.press("Enter")
-                print(f"    [signin] Enter pressed on email")
-            except Exception:
-                pass
+            # Click Continue (NOT Enter — same SPA issue as signup)
+            print("    [signin] clicking Continue...")
+            await self._click_first(page, [
+                'button.cl-formButtonPrimary:not([disabled])',
+                'button[type="submit"]:not([disabled])',
+                'button:has-text("Continue"):not([disabled])',
+                '.cl-formButtonPrimary:not([disabled])',
+            ], timeout=5000)
+            
             await self._human_delay(3, 5)
             
             # Step 2: Check for errors
@@ -416,23 +418,28 @@ class ClerkSignup:
                 'text="incorrect"', 'text="not found"',
             ], timeout=2000)
             if has_error:
-                print("    [signin] ERROR after email step!")
-                # Screenshot
-                ts = datetime.now().strftime("%H%M%S")
-                await page.screenshot(path=f"{self.output_dir}/signin_err_{ts}.png")
+                # Try screenshot but don't fail
+                try:
+                    ts = datetime.now().strftime("%H%M%S")
+                    await page.screenshot(path=f"{self.output_dir}/signin_err_{ts}.png")
+                except Exception:
+                    pass
+                print("    [signin] ⚠️  ERROR after email step!")
             
             # Step 3: Fill password
             ok = await self._fill_field(page, password, SIGNIN_PW_SELECTORS, timeout=5000)
             print(f"    [signin] password filled: {ok}")
-            await self._human_delay(0.3, 0.6)
+            await self._human_delay(0.5, 0.8)
             
-            # Press Enter on password field
-            try:
-                field = page.locator(SIGNIN_PW_SELECTORS[0]).first
-                await field.press("Enter")
-                print(f"    [signin] Enter pressed on password")
-            except Exception:
-                pass
+            # Click Continue/Sign In (NOT Enter)
+            print("    [signin] clicking Sign In...")
+            await self._click_first(page, [
+                'button.cl-formButtonPrimary:not([disabled])',
+                'button[type="submit"]:not([disabled])',
+                'button:has-text("Continue"):not([disabled])',
+                'button:has-text("Sign In"):not([disabled])',
+                '.cl-formButtonPrimary:not([disabled])',
+            ], timeout=5000)
             
             # Wait for redirect after sign-in (Clerk → app dashboard)
             await self._human_delay(3, 5)
@@ -601,19 +608,31 @@ class ClerkSignup:
 
                 if is_signin:
                     print("    API key page redirected to sign-in — auto-logging in...")
-                    await self._fill_field(page, email, self.EMAIL_SELECTORS, timeout=5000)
+                    
+                    # Use sign-in specific selectors (Clerk sign-in uses "identifier" not "emailAddress")
+                    SIGNIN_EMAIL = [
+                        'input[name="identifier"]', '#identifier-field',
+                        '.cl-formFieldInput__identifier',
+                    ] + self.EMAIL_SELECTORS
+                    
+                    await self._fill_field(page, email, SIGNIN_EMAIL, timeout=5000)
                     await self._human_delay(0.5, 1)
                     await self._click_first(page, [
-                        'button[type="submit"]', 'button:has-text("Continue")',
-                        '.cl-formButtonPrimary',
-                    ], timeout=3000)
+                        'button.cl-formButtonPrimary:not([disabled])',
+                        'button[type="submit"]:not([disabled])',
+                        'button:has-text("Continue"):not([disabled])',
+                        '.cl-formButtonPrimary:not([disabled])',
+                    ], timeout=5000)
                     await self._human_delay(2, 3)
                     await self._fill_field(page, password, self.PASSWORD_SELECTORS, timeout=5000)
                     await self._human_delay(0.5, 1)
                     await self._click_first(page, [
-                        'button[type="submit"]', 'button:has-text("Continue")',
-                        '.cl-formButtonPrimary', 'button:has-text("Sign In")',
-                    ], timeout=3000)
+                        'button.cl-formButtonPrimary:not([disabled])',
+                        'button[type="submit"]:not([disabled])',
+                        'button:has-text("Continue"):not([disabled])',
+                        'button:has-text("Sign In"):not([disabled])',
+                        '.cl-formButtonPrimary:not([disabled])',
+                    ], timeout=5000)
                     await self._human_delay(3, 5)
 
                     # Re-navigate to dashboard after login
