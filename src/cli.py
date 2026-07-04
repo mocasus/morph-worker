@@ -38,6 +38,8 @@ Examples:
     run_parser.add_argument("--provider", choices=["mocasus", "gsuite"])
     run_parser.add_argument("--password", type=str)
     run_parser.add_argument("--output", type=str)
+    run_parser.add_argument("--skip-extract", action="store_true",
+                           help="Skip API key extraction (manual onboarding on phone)")
 
     # config
     config_parser = sub.add_parser("config", help="Manage config")
@@ -82,7 +84,7 @@ async def _run(args):
     print()
 
     orch = Orchestrator(cfg)
-    await orch.run(count=args.count, resume=args.resume)
+    await orch.run(count=args.count, resume=args.resume, skip_extract=args.skip_extract)
 
     if orch.results:
         orch.save_results()

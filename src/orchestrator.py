@@ -39,8 +39,14 @@ class Orchestrator:
                 )
             return MocasusProvider(api_key=self.config.mocasus_api_key)
 
-    async def run(self, count: int, resume: bool = False) -> list[dict]:
-        """Run bulk account creation pipeline."""
+    async def run(self, count: int, resume: bool = False, skip_extract: bool = False) -> list[dict]:
+        """Run bulk account creation pipeline.
+        
+        Args:
+            count: Number of accounts to create
+            resume: Skip already-created accounts from state
+            skip_extract: Skip API key extraction (for manual onboarding via phone)
+        """
         already_done = set()
         if resume:
             already_done = self._load_existing()
@@ -61,6 +67,9 @@ class Orchestrator:
 
         try:
             tasks = [bounded(i) for i in range(count) if i not in already_done]
+            
+            # Store skip_extract for _process_account
+            self._skip_extract = skip_extract
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             for r in results:
@@ -155,21 +164,27 @@ class Orchestrator:
                     return result
 
             print(f"[{index}] Signup complete, extracting API key...")
-
-            # Step 4: Extract API key
-            key_result = await signup.extract_api_key(
-                email=inbox.email, password=result["password"])
-            if key_result.get("success"):
-                result["api_key"] = key_result["api_key"]
+            # Step 4: Extract API key (skip if --skip-extract)
+            if self._skip_extract:
+                print(f"[{index}] ⏭️ Skipping API key extraction (manual onboarding)")
                 result["success"] = True
-                print(f"[{index}] API key: {result['api_key'][:20]}...")
+                result["api_key"] = "MANUAL_EXTRACTION_PENDING"
+                result["note"] = "Complete onboarding at morphllm.com on your phone, then run: morphworker import-key"
             else:
-                result["error"] = f"API key extraction failed: {key_result.get('error', 'unknown')}"
-                result["api_key"] = "MANUAL_EXTRACTION_NEEDED"
-                # Account was created, just couldn't extract key
-                if result.get("account_created"):
+                print(f"[{index}] Signup complete, extracting API key...")
+                key_result = await signup.extract_api_key(
+                    email=inbox.email, password=result["password"])
+                if key_result.get("success"):
+                    result["api_key"] = key_result["api_key"]
                     result["success"] = True
+                    print(f"[{index}] API key: {result['api_key'][:20]}...")
+                else:
+                    result["error"] = f"API key extraction failed: {key_result.get('error', 'unknown')}"
                     result["api_key"] = "MANUAL_EXTRACTION_NEEDED"
+                    # Account was created, just couldn't extract key
+                    if result.get("account_created"):
+                        result["success"] = True
+                        result["api_key"] = "MANUAL_EXTRACTION_NEEDED"
 
             # Save state
             state_file = self.state_dir / f"account_{index:04d}.json"
@@ -203,7 +218,8 @@ class Orchestrator:
         """Generate summary of run."""
         success = sum(1 for r in self.results if r.get("success"))
         failed = sum(1 for r in self.results if r.get("error") and not r.get("success"))
-        manual = sum(1 for r in self.results if r.get("api_key") == "MANUAL_EXTRACTION_NEEDED")
+        manual = sum(1 for r in self.results 
+                    if r.get("api_key") in ("MANUAL_EXTRACTION_NEEDED", "MANUAL_EXTRACTION_PENDING"))
 
         lines = [
             f"\n{'='*50}",
