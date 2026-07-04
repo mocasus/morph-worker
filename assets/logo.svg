@@ -1,78 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#10B981;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#34D399;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#064E3B;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="eyeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#34D399;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#6EE7B7;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="keyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#A7F3D0;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#34D399;stop-opacity:1" />
-    </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="innerGlow">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>
+  <!-- Flat dark background -->
+  <rect width="512" height="512" rx="64" fill="#0D1117"/>
 
-  <!-- Background Circle -->
-  <circle cx="256" cy="256" r="250" fill="url(#bgGrad)" opacity="0.15"/>
+  <!-- Minimal Robot Blob Body — flat, single color -->
+  <ellipse cx="256" cy="260" rx="130" ry="120" fill="#047857"/>
 
-  <!-- Robot Blob Body -->
-  <ellipse cx="256" cy="280" rx="140" ry="130" fill="url(#bodyGrad)" stroke="#34D399" stroke-width="3"/>
-  <!-- Body highlight -->
-  <ellipse cx="220" cy="240" rx="70" ry="50" fill="#065F46" opacity="0.4"/>
+  <!-- Head -->
+  <ellipse cx="256" cy="185" rx="90" ry="60" fill="#047857"/>
 
-  <!-- Head bulge -->
-  <ellipse cx="256" cy="195" rx="100" ry="70" fill="#064E3B"/>
-  <ellipse cx="256" cy="190" rx="95" ry="65" fill="#047857"/>
+  <!-- Left Eye — pill shape -->
+  <ellipse cx="225" cy="185" rx="28" ry="16" fill="#10B981"/>
 
-  <!-- Left Eye (pill shape) -->
-  <ellipse cx="218" cy="190" rx="35" ry="22" fill="url(#eyeGrad)" filter="url(#glow)"/>
-  <ellipse cx="218" cy="190" rx="20" ry="12" fill="#fff" opacity="0.5"/>
+  <!-- Right Eye — pill shape -->
+  <ellipse cx="287" cy="185" rx="28" ry="16" fill="#10B981"/>
 
-  <!-- Right Eye (pill shape) -->
-  <ellipse cx="294" cy="190" rx="35" ry="22" fill="url(#eyeGrad)" filter="url(#glow)"/>
-  <ellipse cx="294" cy="190" rx="20" ry="12" fill="#fff" opacity="0.5"/>
-
-  <!-- Mouth (smirk) -->
-  <path d="M 225 225 Q 256 250 287 225" stroke="#34D399" stroke-width="4" fill="none" stroke-linecap="round" filter="url(#innerGlow)"/>
-
-  <!-- API Key icon in hand -->
-  <g transform="translate(370, 290) rotate(-15)">
-    <!-- Key body -->
-    <rect x="0" y="0" width="45" height="14" rx="4" fill="url(#keyGrad)" filter="url(#innerGlow)"/>
-    <!-- Key teeth -->
-    <rect x="0" y="14" width="6" height="8" rx="1" fill="#A7F3D0"/>
-    <rect x="12" y="14" width="6" height="6" rx="1" fill="#A7F3D0"/>
-    <rect x="24" y="14" width="6" height="4" rx="1" fill="#A7F3D0"/>
-    <!-- Key head -->
-    <circle cx="50" cy="7" r="12" fill="none" stroke="#A7F3D0" stroke-width="3"/>
-  </g>
-
-  <!-- Sparkles -->
-  <circle cx="100" cy="120" r="4" fill="#34D399" opacity="0.8" filter="url(#glow)"/>
-  <circle cx="400" cy="150" r="3" fill="#10B981" opacity="0.7" filter="url(#glow)"/>
-  <circle cx="420" cy="380" r="5" fill="#34D399" opacity="0.6" filter="url(#glow)"/>
-  <circle cx="80" cy="350" r="3" fill="#6EE7B7" opacity="0.7" filter="url(#glow)"/>
+  <!-- Smirk -->
+  <path d="M 235 210 Q 256 228 277 210" stroke="#10B981" stroke-width="4" fill="none" stroke-linecap="round"/>
 
   <!-- Text -->
-  <text x="256" y="430" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="800" fill="#10B981" letter-spacing="4">MORPH WORKER</text>
-  <text x="256" y="458" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#6EE7B7" opacity="0.7" letter-spacing="6">BY MMOAA</text>
-
-  <!-- Version badge -->
-  <rect x="395" y="445" width="70" height="22" rx="11" fill="#047857"/>
-  <text x="430" y="461" text-anchor="middle" font-family="monospace" font-size="11" fill="#34D399">v0.1.0</text>
+  <text x="256" y="435" text-anchor="middle" font-family="system-ui, sans-serif" font-size="36" font-weight="800" fill="#10B981" letter-spacing="6">MORPH</text>
+  <text x="256" y="465" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#34D399" opacity="0.6" letter-spacing="8">BY MMOAA</text>
 </svg>
