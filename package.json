@@ -4,8 +4,8 @@
   "description": "Bulk Morph API Key Generator — automate morphllm.com account creation with temp-mail & GSuite",
   "main": "cli.js",
   "bin": {
-    "morphworker": "./cli.js",
-    "morph-worker": "./cli.js"
+    "morphworker": "cli.js",
+    "morph-worker": "cli.js"
   },
   "files": [
     "cli.js",
@@ -34,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mocasus/morph-worker"
+    "url": "git+https://github.com/mocasus/morph-worker.git"
   },
   "homepage": "https://github.com/mocasus/morph-worker#readme",
   "bugs": {

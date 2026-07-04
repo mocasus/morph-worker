@@ -1,10 +1,19 @@
 """GSuite / Google Workspace Email Provider.
 Uses existing Workspace accounts — creates email aliases or uses catch-all.
+
+STATUS: PLACEHOLDER — full Gmail API integration not yet implemented.
+Use MocasusProvider for automated verification.
 """
 from .base import EmailProvider, Inbox
 
+
 class GSuiteProvider(EmailProvider):
-    """Google Workspace email — aliasing on existing domain."""
+    """Google Workspace email — aliasing on existing domain.
+
+    NOTE: This provider creates emails but CANNOT auto-verify them.
+    The wait_for_code() method raises a clear error with instructions.
+    For fully automated flows, use MocasusProvider.
+    """
 
     name = "gsuite"
 
@@ -27,10 +36,25 @@ class GSuiteProvider(EmailProvider):
         return Inbox(email=email, password="", provider="gsuite", meta={"alias": local})
 
     def wait_for_code(self, inbox: Inbox, timeout: int = 120, code_length: int = 6) -> str:
-        """GSuite doesn't support API polling — raise with instructions."""
-        raise NotImplementedError(
-            "GSuite Provider requires manual OTP entry. "
-            "Use Gmail API polling (not yet implemented) or switch to temp-mail provider."
+        """GSuite polling requires Gmail API — not yet implemented.
+
+        Raises RuntimeError with clear user instructions.
+        """
+        raise RuntimeError(
+            "\n"
+            "╔══════════════════════════════════════════════════╗\n"
+            "║  GSuite Provider — Manual Action Required         ║\n"
+            "╠══════════════════════════════════════════════════╣\n"
+            "║  Gmail API polling is not yet implemented.        ║\n"
+            "║                                                    ║\n"
+            "║  Options:                                          ║\n"
+            "║  1. Use 'mocasus' provider for full automation    ║\n"
+            "║  2. Set up Gmail API + wait for implementation    ║\n"
+            "║  3. Use manual OTP entry (not yet supported)      ║\n"
+            "║                                                    ║\n"
+            "║  Switch provider:                                  ║\n"
+            "║  morphworker config --set email_provider=mocasus  ║\n"
+            "╚══════════════════════════════════════════════════╝\n"
         )
 
     def get_messages(self, inbox: Inbox) -> list[dict]:

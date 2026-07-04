@@ -68,10 +68,11 @@ function runInstall() {
 
   console.log('🎭 Installing Playwright Chromium...');
   try {
-    execSync('npx playwright install chromium', { stdio: 'inherit', cwd: PROJECT_DIR });
+    // Prefer python module (works without npx)
+    execSync(`"${PYTHON_CMD}" -m playwright install chromium`, { stdio: 'inherit', cwd: PROJECT_DIR });
     console.log('✅ Playwright Chromium installed.');
   } catch (e) {
-    console.error('⚠️ playwright install failed. Run manually: npx playwright install chromium');
+    console.error('⚠️ playwright install failed. Run manually: python3 -m playwright install chromium');
   }
 
   console.log('\n🦊 Morph Worker ready! Run: morphworker run 5');

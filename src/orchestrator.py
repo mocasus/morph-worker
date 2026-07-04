@@ -1,11 +1,9 @@
 """Bulk orchestrator — pipeline manager for mass account creation."""
 import asyncio
 import json
-import os
 import time
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
 
 from .email_providers.base import EmailProvider, Inbox
 from .email_providers.mocasus import MocasusProvider
@@ -36,45 +34,46 @@ class Orchestrator:
             )
         else:
             if not self.config.mocasus_api_key:
-                raise ValueError("MOCASUS_API_KEY is required. Set in config or MORPH_MOCASUS_API_KEY env.")
+                raise ValueError(
+                    "MOCASUS_API_KEY is required. "
+                    "Set via: morphworker config --set mocasus_api_key=YOUR_KEY"
+                )
             return MocasusProvider(api_key=self.config.mocasus_api_key)
 
     async def run(self, count: int, resume: bool = False) -> list[dict]:
-        """Run bulk account creation pipeline.
-
-        Args:
-            count: Number of accounts to create
-            resume: Skip accounts already in state/
-
-        Returns:
-            List of account dicts: {email, password, api_key, created_at, error?}
-        """
+        """Run bulk account creation pipeline."""
         already_done = set()
         if resume:
             already_done = self._load_existing()
 
-        accounts = []
-        tasks = []
-        for i in range(count):
-            if i in already_done:
-                continue
-            tasks.append(self._process_account(i))
+        # Create a single shared browser for all accounts
+        signup = ClerkSignup(
+            headless=self.config.headless,
+            stealth=self.config.stealth,
+            output_dir=str(self.output_dir),
+        )
 
-        # Run with concurrency control
         sem = asyncio.Semaphore(self.config.concurrency)
+        accounts = []
 
         async def bounded(task_idx):
             async with sem:
-                return await self._process_account(task_idx)
+                return await self._process_account(task_idx, signup)
 
-        results = await asyncio.gather(*[bounded(i) for i in range(count) if i not in already_done],
-                                       return_exceptions=True)
+        try:
+            tasks = [bounded(i) for i in range(count) if i not in already_done]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        for r in results:
-            if isinstance(r, Exception):
-                accounts.append({"error": str(r), "created_at": datetime.now().isoformat()})
-            else:
-                accounts.append(r)
+            for r in results:
+                if isinstance(r, Exception):
+                    accounts.append({
+                        "error": str(r),
+                        "created_at": datetime.now().isoformat(),
+                    })
+                else:
+                    accounts.append(r)
+        finally:
+            await signup.close()
 
         # Merge with already-done accounts
         for i in sorted(already_done):
@@ -85,7 +84,7 @@ class Orchestrator:
         self.results = accounts
         return accounts
 
-    async def _process_account(self, index: int) -> dict:
+    async def _process_account(self, index: int, signup: ClerkSignup) -> dict:
         """Full pipeline for one account."""
         result = {
             "index": index,
@@ -95,12 +94,6 @@ class Orchestrator:
             "created_at": datetime.now().isoformat(),
             "success": False,
         }
-
-        signup = ClerkSignup(
-            headless=self.config.headless,
-            stealth=self.config.stealth,
-            output_dir=str(self.output_dir),
-        )
 
         try:
             # Step 1: Generate email
@@ -119,36 +112,65 @@ class Orchestrator:
                 last_name=self.config.last_name,
             )
 
+            # Handle Vercel checkpoint
+            if signup_result.get("state") == "vercel_blocked":
+                result["error"] = "Vercel security checkpoint — try residential proxy or non-headless mode"
+                return result
+
+            # Handle form errors
+            if signup_result.get("state") == "form_error":
+                result["error"] = f"Form error: {signup_result.get('error')}"
+                return result
+
+            # Handle verification needed
             if signup_result.get("needs_verification"):
-                # Step 3: Wait for verification code
                 print(f"[{index}] Waiting for verification code...")
                 try:
                     code = self.email_provider.wait_for_code(inbox, timeout=120)
                     print(f"[{index}] Got code: {code}")
 
-                    # Submit code
                     verify_result = await signup.submit_verification_code(inbox.email, code)
                     if not verify_result.get("success"):
-                        result["error"] = f"Verification failed: {verify_result.get('error')}"
+                        result["error"] = f"Verification failed: {verify_result.get('error', 'unknown')}"
+                        result["account_created"] = True  # account exists, just couldn't verify
                         return result
                 except TimeoutError:
                     result["error"] = "Verification code timeout"
+                    result["account_created"] = True
                     return result
-            elif not signup_result.get("success") and signup_result.get("state") != "completed":
-                result["error"] = f"Signup failed: {signup_result.get('error', 'unknown')}"
-                return result
+                except RuntimeError as e:
+                    # GSuite provider raises RuntimeError for manual action
+                    result["error"] = str(e)
+                    return result
+
+            # Handle unknown state — account MIGHT be created
+            if signup_result.get("state") == "unknown":
+                print(f"[{index}] Signup state unknown — attempting to continue...")
+                # Don't fail yet — try to extract API key anyway
+                result["account_created"] = True
+
+            # Account not created and not verified
+            if not signup_result.get("success") and not signup_result.get("needs_verification"):
+                if signup_result.get("state") != "unknown":
+                    result["error"] = f"Signup failed: {signup_result.get('error', 'unknown')}"
+                    return result
 
             print(f"[{index}] Signup complete, extracting API key...")
 
             # Step 4: Extract API key
-            key_result = await signup.extract_api_key()
+            key_result = await signup.extract_api_key(
+                email=inbox.email, password=result["password"])
             if key_result.get("success"):
                 result["api_key"] = key_result["api_key"]
                 result["success"] = True
                 print(f"[{index}] API key: {result['api_key'][:20]}...")
             else:
-                result["error"] = f"API key extraction failed: {key_result.get('error')}"
+                result["error"] = f"API key extraction failed: {key_result.get('error', 'unknown')}"
                 result["api_key"] = "MANUAL_EXTRACTION_NEEDED"
+                # Account was created, just couldn't extract key
+                if result.get("account_created"):
+                    result["success"] = True
+                    result["api_key"] = "MANUAL_EXTRACTION_NEEDED"
 
             # Save state
             state_file = self.state_dir / f"account_{index:04d}.json"
@@ -156,8 +178,6 @@ class Orchestrator:
 
         except Exception as e:
             result["error"] = str(e)
-        finally:
-            await signup.close()
 
         return result
 
