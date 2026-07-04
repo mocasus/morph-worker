@@ -6,6 +6,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-0.1.0-10B981?style=flat-square" alt="Version">
+  <a href="https://www.npmjs.com/package/morph-worker"><img src="https://img.shields.io/npm/v/morph-worker?color=10B981&style=flat-square" alt="npm"></a>
   <img src="https://img.shields.io/badge/python-3.11+-blue?style=flat-square" alt="Python">
   <img src="https://img.shields.io/badge/node-18+-green?style=flat-square" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-10B981?style=flat-square" alt="License">
@@ -45,15 +46,13 @@
 ### Installation
 
 ```bash
-# Clone
-git clone https://github.com/mocasus/morph-worker.git
-cd morph-worker
+# Install from npm
+npm install -g morph-worker
 
-# Install dependencies
-npm run install-deps
+# Install Python + Playwright deps
+morphworker install
 # Or manually:
-# pip install -r requirements.txt
-# playwright install chromium
+# pip install -r requirements.txt && playwright install chromium
 ```
 
 ### Configuration

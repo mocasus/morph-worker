@@ -1,0 +1,19 @@
+# Dev files
+.git/
+.gitignore
+.github/
+node_modules/
+package-lock.json
+
+# Output dirs
+output/
+logs/
+state/
+
+# Test/dev
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

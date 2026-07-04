@@ -1,21 +1,46 @@
 {
   "name": "morph-worker",
   "version": "0.1.0",
-  "description": "Bulk Morph API Key Generator — automate morphllm.com account creation",
+  "description": "Bulk Morph API Key Generator — automate morphllm.com account creation with temp-mail & GSuite",
   "main": "cli.js",
   "bin": {
     "morphworker": "./cli.js",
     "morph-worker": "./cli.js"
   },
+  "files": [
+    "cli.js",
+    "src/",
+    "requirements.txt",
+    "assets/logo.svg",
+    "README.md",
+    "PRD.md",
+    "SECURITY.md"
+  ],
   "scripts": {
-    "install-deps": "pip install -r requirements.txt && playwright install chromium",
+    "postinstall": "node -e \"console.log('\\n🦊 Morph Worker installed! Run: morphworker install\\n')\"",
     "start": "node cli.js"
   },
-  "keywords": ["morph", "morphllm", "api-key", "automation", "bulk"],
+  "keywords": [
+    "morph",
+    "morphllm",
+    "api-key",
+    "automation",
+    "bulk",
+    "temp-mail",
+    "playwright",
+    "account-generator"
+  ],
   "author": "mmoaa",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/mocasus/morph-worker"
+  },
+  "homepage": "https://github.com/mocasus/morph-worker#readme",
+  "bugs": {
+    "url": "https://github.com/mocasus/morph-worker/issues"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

@@ -30,6 +30,7 @@ function showHelp() {
 Usage: morphworker <command> [options]
 
 Commands:
+  install             Install Python deps + Playwright Chromium
   run <count>         Create N accounts
     --resume          Skip already-created accounts
     --no-headless     Show browser window
@@ -45,11 +46,35 @@ Commands:
     --format FMT      json | csv | env (default: json)
 
 Examples:
+  morphworker install
   morphworker run 10
   morphworker run 5 --resume --concurrency 2
-  morphworker config --set email_provider=mocasus,mocasus_api_key=YOUR_KEY
+  morphworker config --set mocasus_api_key=YOUR_KEY
   morphworker export --format csv
 `);
+}
+
+function runInstall() {
+  const { execSync } = require('child_process');
+  console.log('📦 Installing Python dependencies...');
+  try {
+    execSync(`"${PYTHON_CMD}" -m pip install -r "${path.join(PROJECT_DIR, 'requirements.txt')}"`, {
+      stdio: 'inherit', cwd: PROJECT_DIR
+    });
+    console.log('✅ Python deps installed.');
+  } catch (e) {
+    console.error('⚠️ pip install failed. Run manually: pip install -r requirements.txt');
+  }
+
+  console.log('🎭 Installing Playwright Chromium...');
+  try {
+    execSync('npx playwright install chromium', { stdio: 'inherit', cwd: PROJECT_DIR });
+    console.log('✅ Playwright Chromium installed.');
+  } catch (e) {
+    console.error('⚠️ playwright install failed. Run manually: npx playwright install chromium');
+  }
+
+  console.log('\n🦊 Morph Worker ready! Run: morphworker run 5');
 }
 
 function runPython(args) {
@@ -79,12 +104,10 @@ async function main() {
     process.exit(0);
   }
 
-  // Check for Python
-  try {
-    runPython(['--help']).catch(() => {});
-  } catch {
-    console.error('❌ Python 3 not found. Install Python 3.11+ and pip install -r requirements.txt');
-    process.exit(1);
+  // Handle install command (no Python needed)
+  if (args[0] === 'install') {
+    runInstall();
+    process.exit(0);
   }
 
   // Forward all args to Python CLI
