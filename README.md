@@ -101,6 +101,9 @@ morphworker run 5 --provider gsuite --password MyStrongPass123
 # Export results
 morphworker export --format csv
 morphworker export --format env
+
+# Skip API key extraction (complete onboarding on phone)
+morphworker run 5 --skip-extract
 ```
 
 ### Using Python directly
