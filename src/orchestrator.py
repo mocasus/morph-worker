@@ -24,7 +24,6 @@ class Orchestrator:
         self.state_dir = self.output_dir / "state"
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.results: list[dict] = []
-        self._semaphore = asyncio.Semaphore(max(1, config.concurrency))
 
     def _init_email_provider(self) -> EmailProvider:
         if self.config.email_provider == "gsuite":

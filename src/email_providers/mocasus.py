@@ -123,7 +123,7 @@ class MocasusProvider(EmailProvider):
             if r.status_code < 300:
                 resp = r.json()
                 # Accept both {"ok": true} and {"ok": True} and {"status": "ok"}
-                return resp.get("ok") is True or resp.get("ok") is not False or resp.get("status") == "ok"
+                return resp.get("ok") in (True, "true", 1) or resp.get("status") == "ok"
             return False
         except Exception:
             return False
